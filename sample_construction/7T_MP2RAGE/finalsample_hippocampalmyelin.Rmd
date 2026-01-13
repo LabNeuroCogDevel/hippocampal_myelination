@@ -1,0 +1,165 @@
+---
+title: "Hippocampal R1 Sample Selection"
+output: 
+  html_document:
+    code_folding: show
+    highlight: monochrome
+    theme: flatly
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(tidyverse)
+library(fuzzyjoin)
+#library(arrow)
+library(readODS)
+library(tidyr)
+```
+
+## Sample Construction
+
+**7T Brain Mechanisms Scan List**
+
+7T scan list
+
+```{r}
+scans.7T <- read_ods("/Volumes/Hera/Projects/hippocampal_myelin/sample_info/7T_MP2RAGE/7T_subcorticalR1_QC.ods")
+```
+
+#### Missing Data Exclusion 
+
+Exclude sessions with no FreeSurfer output
+
+```{r}
+scans.7T <- scans.7T %>% filter(Freesurfer_completed == 1) #265 sessions from 163 participants with longitudinal Freesurfer output
+```
+
+#### Psychiatric Diagnosis Exclusion 
+
+Exclude participants that received a psychiatric diagnosis during or after baseline data collection
+
+```{r}
+subids.psychexclude <- c("sub-11646", "sub-11659", "sub-11800", "sub-11653", "sub-11690", "sub-11812")
+participants.healthy <- scans.7T[!(scans.7T$subject_id %in% subids.psychexclude),] #remove 3 baseline sessions (and 3 participants) from the 265 due to psychiatric diagnosis, resulting in N = 262 sessions from 160 subjects 
+```
+
+#### Visual Quality Control Exclusion 
+
+Exclude sessions that failed visual QC
+
+```{r}
+participants.qc <- participants.healthy %>% filter(R1_hippocampus_VJS == 1) #remove 17 sessions that failed visual QC from the 262, remaining N = 245 scans from 152 participants 
+participants.qc$subses <- sprintf("%s_%s", participants.qc$subject_id, participants.qc$session_id)
+```
+
+#### Quantitative Quality Control Exclusion
+
+Exclude sessions with outlier R1 data at the whole hippocampus level
+
+```{r}
+hippocampal.R1 <- read.csv("/Volumes/Hera/Projects/hippocampal_myelin/output_measures/7T_MP2RAGE/hippocampal_R1/hippocampus_meanR1_aseg_stats.csv")
+hippocampal.R1 <- hippocampal.R1 %>% mutate(subject_id = str_extract(fs_subid, "sub-[0-9]+"), session_id = str_extract(fs_subid, "ses-[0-9]+"))
+hippocampal.R1$subses <- sprintf("%s_%s", hippocampal.R1$subject_id, hippocampal.R1$session_id)
+hippocampal.R1 <- hippocampal.R1[(hippocampal.R1$subses %in% participants.qc$subses),] 
+```
+
+```{r}
+bilateral.mean <- mean(c(hippocampal.R1$lh_hippocampus_R1, hippocampal.R1$rh_hippocampus_R1))
+bilateral.sd <- sd(c(hippocampal.R1$lh_hippocampus_R1, hippocampal.R1$rh_hippocampus_R1))
+bilateral.threshold_upper <- bilateral.mean + (2.99 * bilateral.sd)
+bilateral.threshold_lower <- bilateral.mean - (2.99 * bilateral.sd)
+
+outliers <- hippocampal.R1 %>%
+  filter((rh_hippocampus_R1 >= bilateral.threshold_upper) | (rh_hippocampus_R1 <= bilateral.threshold_lower) | (lh_hippocampus_R1 >= bilateral.threshold_upper) | (lh_hippocampus_R1 <= bilateral.threshold_lower))
+
+participants.qc <- participants.qc %>% filter(subses != "sub-11640_ses-20180514") #remove 1 session that failed quantitative QC from the 245, remaining N = 244 from 151 participants
+```
+
+#### Repeated Sessions Exclusion
+
+Exclude repeat-MR sessions that occurred within < 6 months of each other
+
+```{r}
+#Calculate the number of days between each pair of scans for each subject
+participants.qc <- participants.qc %>% mutate(scan_date = ymd(gsub('.*-', '', session_id)))
+participants.qc <- participants.qc %>% group_by(subject_id) %>% mutate(interscan_days = c(NA, diff(scan_date))) %>% ungroup()
+
+#Identify subject_ids and session_ids with repeat scans
+subids.repeatscans <- participants.qc %>% filter(interscan_days < 180) %>% select(subject_id)
+repeatscans <- participants.qc[participants.qc$subject_id %in% subids.repeatscans$subject_id,] %>% select(subject_id, session_id, scan_date, interscan_days) %>% mutate(lunaid = gsub("sub-", "", subject_id))
+sprintf("There are %s repeat scans to remove", length(unique(subids.repeatscans$subject_id))) #4 participants with repeat scans < 6 months apart
+```
+
+```{r}
+repeatscan.indices <- which(repeatscans$interscan_days < 180) #rows containing the repeat scan 
+repeatscan.indices <- c(repeatscan.indices, repeatscan.indices - 1)
+
+repeatscans <- repeatscans[repeatscan.indices,] %>% arrange(subject_id, session_id)
+```
+
+```{r}
+participants.final <- participants.qc %>% filter(!(subject_id == "sub-11668" & session_id == "ses-20180723"))
+participants.final <- participants.final %>% filter(!(subject_id == "sub-11716" & session_id == "ses-20221118"))
+participants.final <- participants.final %>% filter(!(subject_id == "sub-11793" & session_id == "ses-20230120"))
+participants.final <- participants.final %>% filter(!(subject_id == "sub-11822" & session_id == "ses-20210412")) #remove 4 sessions that are repeat MRI from the 244, resulting in N = 240 sessions from 151 participants
+```
+
+Exclude subject with incorrect (repeat assign) lunaid
+```{r}
+participants.final <- participants.final %>% filter(!(subject_id == "sub-11748" & session_id == "ses-20190401")) #remove 1 sub/session from the 240, resulting in N = 239 sessions from 50 subjects
+```
+
+#### Save Final Sample
+
+```{r}
+participants.final <- participants.final %>% select(subject_id, session_id, subses)
+write.csv(participants.final, "/Volumes/Hera/Projects/hippocampal_myelin/sample_info/7T_MP2RAGE/finalsample_subses.csv", quote = F, row.names = F)
+```
+
+## Sample Characterization
+
+#### Sample information
+
+**Final number of participants**
+
+```{r}
+length(unique(participants.final$subject_id))
+```
+
+**Final number of scans**
+
+```{r}
+length(participants.final$session_id)
+```
+
+**Distribution of number of scans per participant**
+
+```{r}
+participants.final <- participants.final %>% group_by(subject_id) %>% mutate(mp2rage.session_number = dense_rank(session_id))
+table(participants.final$mp2rage.session_number) #83 participants with 1 scan, 45 participants with 2 scans, 22 participants with 3 scans
+```
+
+```{r}
+#Match subject and session ids to the data in merge 7T via fuzzy regex matching between lunaid-lunaid and top.mri.date versus session_id date
+merge7t <- read.csv("/Volumes/Hera/Projects/hippocampal_myelin/sample_info/7T_MP2RAGE/merge_7t_04172025.csv") %>% select(lunaid, visitno, behave.date, top.mri.date, sex, sess.age, ADI_NATRANK, ADI_STATERNK, sr.total_probs_T, sr.internalizing_probs_T, sr.externalizing_probs_T)
+merge7t$lunaid <- as.character(merge7t$lunaid)
+
+participants.final <- participants.final %>% mutate(lunaid = gsub("sub-", "", subject_id)) #create lunaid variable
+participants.final <- participants.final %>% mutate(mp2rage.date = gsub("ses-", "", session_id)) #scandate variable
+
+participants.final.demos <- fuzzy_right_join(merge7t, participants.final, by = c("lunaid" = "lunaid", "top.mri.date" = "mp2rage.date"), match_fun = str_detect)
+
+participants.final.demos <- participants.final.demos %>% rename(lunaid = lunaid.x, age = sess.age) %>% select(-lunaid.y, - mp2rage.date)
+participants.final.demos <- participants.final.demos %>% select(subject_id, session_id, subses, lunaid, visitno, mp2rage.session_number, top.mri.date, behave.date, age, sex, everything()) #order cols
+write.csv(participants.final.demos, "/Volumes/Hera/Projects/hippocampal_myelin/sample_info/7T_MP2RAGE/finalsample_demographics.csv", quote = F, row.names = F)
+```
+
+
+
+
