@@ -18,7 +18,7 @@ library(dplyr)
 gam.statistics.smooths <- function(input.df, region, smooth_var, id_var, covariates, random_intercepts = FALSE, knots, set_fx = FALSE){
   
   ## MODEL FITTING ##
-  set.seed(1) #for consistency in derivatives + derivative credible intervals
+  set.seed(1) #for consistency in derivatives + posterior draws
   
   #Format input data
   gam.data <- input.df #df for gam modeling
@@ -96,6 +96,8 @@ gam.statistics.smooths <- function(input.df, region, smooth_var, id_var, covaria
     }
   }
   pred <- thisPred %>% select(-init)
+  pred2 <- pred #second prediction df
+  pred2[,smooth_var] <- pred[,smooth_var] + 1e-07 #finite differences
   
   ## MODEL STATISTICS ##
   
@@ -212,7 +214,7 @@ gam.statistics.smooths <- function(input.df, region, smooth_var, id_var, covaria
   ## MODEL SMOOTH ESTIMATES ## 
   
   #Estimate the zero-averaged gam smooth function 
-  gam.smoothestimates <- smooth_estimates(object = gam.model, data = pred, smooth = sprintf('s(%s)',smooth_var))
+  gam.smoothestimates <- smooth_estimates(object = gam.model, data = pred, smooth = sprintf('s(%s)', smooth_var))
   gam.smoothestimates <- gam.smoothestimates %>% select(all_of(smooth_var), est, se)
   gam.smoothestimates$orig_parcelname <- parcel
   
@@ -223,8 +225,25 @@ gam.statistics.smooths <- function(input.df, region, smooth_var, id_var, covaria
   names(gam.derivatives) <- c(sprintf("%s", smooth_var), "derivative", "lower", "upper", "significant", "significant.derivative")
   gam.derivatives$orig_parcelname <- parcel
   
-  gam.results <- list(gam.statistics, gam.fittedvalues, gam.smoothestimates, gam.derivatives)
-  names(gam.results) <- list("gam.statistics", "gam.fittedvalues", "gam.smoothestimates", "gam.derivatives")
+  ## POSTERIOR DERIVATIVES ##
+  draws <- 10000
+  
+  Vb <- vcov(gam.model, unconditional = TRUE) #variance-covariance matrix for all the fitted model parameters (intercept, covariates, and splines)
+  sims <- MASS::mvrnorm(draws, mu = coef(gam.model), Sigma = Vb) #simulate model parameters (coefficents) from the posterior distribution of the smooth based on actual model coefficients and covariance
+  X0 <- predict(gam.model, newdata = pred, type = "lpmatrix") #get matrix of linear predictors for pred
+  X1 <- predict(gam.model, newdata = pred2, type = "lpmatrix") #get matrix of linear predictors for pred2
+  Xp <- (X1 - X0) / 1e-07 
+  posterior.derivs <- Xp %*% t(sims) #Xp * simulated model coefficients = simulated derivatives. Each column of posterior.derivs contains derivatives for a different draw from the simulated posterior distribution
+  posterior.derivs <- as.data.frame(posterior.derivs)
+  colnames(posterior.derivs) <- sprintf("draw%s",seq(from = 1, to = draws)) #label the draws
+  posterior.derivs <- cbind(as.numeric(pred[,smooth_var]), posterior.derivs) #add smooth_var increments from pred df to first column
+  colnames(posterior.derivs)[1] <- sprintf("%s", smooth_var) #label the smooth_var column
+  posterior.derivs <- cbind(as.character(parcel), posterior.derivs) #add parcel label to first column
+  colnames(posterior.derivs)[1] <- "orig_parcelname" #label the column
+  gam.posterior.derivatives <- posterior.derivs %>% pivot_longer(contains("draw"), names_to = "draw", values_to = "posterior.derivative")
+  
+  gam.results <- list(gam.statistics, gam.fittedvalues, gam.smoothestimates, gam.derivatives, gam.posterior.derivatives)
+  names(gam.results) <- list("gam.statistics", "gam.fittedvalues", "gam.smoothestimates", "gam.derivatives", "gam.posterior.derivatives")
   return(gam.results)
 }
 
@@ -242,6 +261,7 @@ gam.statistics.smooths <- function(input.df, region, smooth_var, id_var, covaria
 gam.linearcovariate.maineffect <- function(input.df, region, smooth_var, id_var, covariates, random_intercepts = FALSE, knots, set_fx = FALSE){
   
   ## MODEL FITTING ##
+  set.seed(1) 
   
   #Format input data
   gam.data <- input.df #df for gam modeling
@@ -274,8 +294,10 @@ gam.linearcovariate.maineffect <- function(input.df, region, smooth_var, id_var,
   
   #t-value for the covariate of interest term and GAM-based significance of this term
   gam.cov.tvalue <- gam.results$p.table[2,3]
+  
   #GAM based significance of the term
   gam.cov.pvalue <- gam.results$p.table[2,4]
+  
   #standardized slope of the relationship between covariate of interest and y (accounting for all other model terms)
   covariate.interest <- sub(" .*", "", covariates)
   if(is.numeric(gam.model$model[[covariate.interest]])){
@@ -295,7 +317,7 @@ gam.linearcovariate.maineffect <- function(input.df, region, smooth_var, id_var,
 gam.varyingcoefficient.interaction <- function(input.df, region, smooth_var, smooth_var_knots, smooth_covariate, smooth_covariate_knots, int_var, linear_covariates, id_var, random_intercepts = FALSE, set_fx = FALSE, return_posterior_coefficients = FALSE){
   
   ## MODEL FITTING ##
-  set.seed(1) #for consistency in derivatives + derivative credible intervals
+  set.seed(1) 
   
   #Format input data
   gam.data <- input.df #df for gam modeling
