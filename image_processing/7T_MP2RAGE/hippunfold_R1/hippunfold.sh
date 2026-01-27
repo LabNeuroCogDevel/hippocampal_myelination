@@ -11,7 +11,7 @@ for sub_path in "$bids_dir"/sub-*/; do
     sub_id=$(basename "$sub_path")
     echo "checking $sub_id"
 
-    coords_file=(${output_dir}/${sub_id}/ses-*/coords/sub-${sub_id}_ses-*_dir-AP_hemi-L_space-cropT1w_label-dentate_desc-laplace_coords.nii.gz)
+    coords_file=(${output_dir}/hippunfold/${sub_id}/ses-*/coords/${sub_id}_ses-*_dir-AP_hemi-L_space-cropT1w_label-dentate_desc-laplace_coords.nii.gz)
     session=(${bids_dir}/${sub_id}/ses-*)
     num_ses=${#session[@]}  
     num_coords=${#coords_file[@]}  
