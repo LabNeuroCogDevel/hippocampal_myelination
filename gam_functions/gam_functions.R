@@ -12,10 +12,10 @@ library(dplyr)
 #'@param id_var: name of the input.df column to use as the random effects variable
 #'@param covariates: linear covariates to include in the gam model. multiple covariates can be included here as "cov1 + cov2 + cov3" or can be set to "NA" for none
 #'@param random_intercepts: TRUE/FALSE as to whether the gam should include random intercepts for the id_var
-#'@param random_slopes: TRUE/FALSE as to whether the gam should include random slops for the id_var
 #'@param knots: value of k to use for the smooth_var s() term
 #'@param set_fx: TRUE/FALSE as to whether to used fixed (T) or penalized (F) splines for the smooth_var s() term  
-gam.statistics.smooths <- function(input.df, region, smooth_var, id_var, covariates, random_intercepts = FALSE, knots, set_fx = FALSE){
+#'@param stats_only: TRUE/FALSE as to whether to only return gam.statistics (TRUE) or also return gam.fittedvalues, gam.smoothestimates, gam.derivatives, gam.posterior.derivatives
+gam.statistics.smooths <- function(input.df, region, smooth_var, id_var, covariates, random_intercepts = FALSE, knots, set_fx = FALSE, stats_only = FALSE){
   
   ## MODEL FITTING ##
   set.seed(1) #for consistency in derivatives + posterior draws
@@ -35,7 +35,7 @@ gam.statistics.smooths <- function(input.df, region, smooth_var, id_var, covaria
   }}
   
   #Fit the model
-  if(random_intercepts == FALSE && random_slopes == FALSE){
+  if(random_intercepts == FALSE){
     if(covariates != "NA"){
       modelformula <- as.formula(sprintf("%s ~ s(%s, k = %s, fx = %s) + %s", region, smooth_var, knots, set_fx, covariates))
       gam.model <- gam(modelformula, method = "REML", data = gam.data)
@@ -242,8 +242,14 @@ gam.statistics.smooths <- function(input.df, region, smooth_var, id_var, covaria
   colnames(posterior.derivs)[1] <- "orig_parcelname" #label the column
   gam.posterior.derivatives <- posterior.derivs %>% pivot_longer(contains("draw"), names_to = "draw", values_to = "posterior.derivative")
   
-  gam.results <- list(gam.statistics, gam.fittedvalues, gam.smoothestimates, gam.derivatives, gam.posterior.derivatives)
-  names(gam.results) <- list("gam.statistics", "gam.fittedvalues", "gam.smoothestimates", "gam.derivatives", "gam.posterior.derivatives")
+  if(stats_only == TRUE){
+    gam.results <- gam.statistics
+  }
+  
+  if(stats_only == FALSE){
+    gam.results <- list(gam.statistics, gam.fittedvalues, gam.smoothestimates, gam.derivatives, gam.posterior.derivatives)
+    names(gam.results) <- list("gam.statistics", "gam.fittedvalues", "gam.smoothestimates", "gam.derivatives", "gam.posterior.derivatives")
+  }
   return(gam.results)
 }
 
@@ -255,7 +261,6 @@ gam.statistics.smooths <- function(input.df, region, smooth_var, id_var, covaria
 #'@param id_var: name of the input.df column to use as the random effects variable
 #'@param covariates: linear covariates to include in the gam model. multiple covariates can be included here as "cov1 + cov2 + cov3" but the FIRST COVARIATE (cov1) must be the main effect of interest
 #'@param random_intercepts: TRUE/FALSE as to whether the gam should include random intercepts for the id_var
-#'@param random_slopes: TRUE/FALSE as to whether the gam should include random slops for the id_var
 #'@param knots: value of k to use for the smooth_var s() term
 #'@param set_fx: TRUE/FALSE as to whether to used fixed (T) or penalized (F) splines for the smooth_var s() term  
 gam.linearcovariate.maineffect <- function(input.df, region, smooth_var, id_var, covariates, random_intercepts = FALSE, knots, set_fx = FALSE){
@@ -278,7 +283,7 @@ gam.linearcovariate.maineffect <- function(input.df, region, smooth_var, id_var,
     }}
   
   #Fit the model
-  if(random_intercepts == FALSE && random_slopes == FALSE){
+  if(random_intercepts == FALSE){
     modelformula <- as.formula(sprintf("%s ~ s(%s, k = %s, fx = %s) + %s", region, smooth_var, knots, set_fx, covariates))
     gam.model <- gam(modelformula, method = "REML", data = gam.data)
     gam.results <- summary(gam.model)
