@@ -396,7 +396,7 @@ gam.varyingcoefficient.interaction <- function(input.df, region, smooth_var, smo
     if (thisVar == int_var) { 
       pred.low[,int_var] <- (min(df[,int_var],na.rm = T))
     } else if (thisVar == smooth_covariate) {
-      pred.low[,smooth_covariate] = seq(min(df[,smooth_covariate],na.rm = T),max(df[,smooth_covariate],na.rm = T), length.out = np)
+      pred.low[,smooth_covariate] = seq(10, 30, length.out = np)
     } else {
       switch (thisClass,
               "numeric" = {pred.low[,thisVar] = median(df[,thisVar])}, #make predictions based on median value
@@ -411,7 +411,7 @@ gam.varyingcoefficient.interaction <- function(input.df, region, smooth_var, smo
     if (thisVar == int_var) { 
       pred.high[,int_var] <- (max(df[,int_var],na.rm = T))
     } else if (thisVar == smooth_covariate) {
-      pred.high[,smooth_covariate] = seq(min(df[,smooth_covariate],na.rm = T),max(df[smooth_covariate],na.rm = T), length.out = np)
+      pred.high[,smooth_covariate] = seq(10, 30, length.out = np)
     } else {
       switch (thisClass,
               "numeric" = {pred.high[,thisVar] = median(df[,thisVar])}, #make predictions based on median value
