@@ -303,7 +303,7 @@ gam.linearcovariate.maineffect <- function(input.df, region, smooth_var, id_var,
   #GAM based significance of the term
   gam.cov.pvalue <- gam.results$p.table[2,4]
   
-  #standardized slope of the relationship between covariate of interest and y (accounting for all other model terms)
+  #slope and standardized slope of the relationship between covariate of interest and y (accounting for all other model terms)
   covariate.interest <- sub(" .*", "", covariates)
   if(is.numeric(gam.model$model[[covariate.interest]])){
   slope <- coef(gam.model)[covariate.interest]
@@ -312,10 +312,11 @@ gam.linearcovariate.maineffect <- function(input.df, region, smooth_var, id_var,
   standardized.slope <- slope * (covariate.interest.sd / y.sd)
   }
   if(!is.numeric(gam.model$model[[covariate.interest]])){
-  standardized.slope = NA
+  slope <- NA
+  standardized.slope <- NA
   }
   
-  gam.results <- data.frame(orig_parcelname = as.character(parcel), GAM.covariate.tvalue = as.numeric(gam.cov.tvalue), GAM.covariate.slope = as.numeric(standardized.slope), GAM.covariate.pvalue = as.numeric(gam.cov.pvalue))
+  gam.results <- data.frame(orig_parcelname = as.character(parcel), GAM.covariate.tvalue = as.numeric(gam.cov.tvalue), GAM.covariate.slope = as.numeric(slope), GAM.covariate.standardized.slope = as.numeric(standardized.slope), GAM.covariate.pvalue = as.numeric(gam.cov.pvalue))
   return(gam.results)
 }
 
