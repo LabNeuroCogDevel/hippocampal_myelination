@@ -118,12 +118,6 @@ gam.statistics.smooths <- function(input.df, region, smooth_var, id_var, covaria
   
   gam.smooth.pvalue <- gam.results$s.table[1,4] #first row is s(smooth_var), fourth entry is p-value
   
-  #Full versus reduced model direction-dependent partial R squared
-  if (exists("null.results")) {
-    sse.model <- sum((gam.model$y - gam.model$fitted.values)^2)
-    sse.nullmodel <- sum((null.model$y - null.model$fitted.values)^2)
-    partialRsq <- (sse.nullmodel - sse.model)/sse.nullmodel}
-    
   #Derivative-based temporal characteristics
   #Age of developmental change onset
   if(sum(derv$sig) > 0){ #if derivative is significant at at least 1 age
@@ -198,11 +192,10 @@ gam.statistics.smooths <- function(input.df, region, smooth_var, id_var, covaria
   if(sum(derv$sig) == 0){ 
     change.offset <- NA}  
   
-  gam.statistics <- data.frame(orig_parcelname = as.character(parcel), GAM.smooth.Fvalue = as.numeric(gam.smooth.F), GAM.smooth.pvalue = as.numeric(gam.smooth.pvalue), partialR2 = as.numeric(partialRsq),
-                                   smooth.change.onset = as.numeric(change.onset), smooth.peak.change = as.numeric(peak.change), smooth.decrease.onset = as.numeric(decrease.onset), 
-                                   smooth.decrease.offset = as.numeric(decrease.offset), smooth.increase.onset = as.numeric(increase.onset), 
+  gam.statistics <- data.frame(orig_parcelname = as.character(parcel), GAM.smooth.Fvalue = as.numeric(gam.smooth.F), GAM.smooth.pvalue = as.numeric(gam.smooth.pvalue),
+                                   mean.derivative = as.numeric(mean.derivative), smooth.change.onset = as.numeric(change.onset), smooth.peak.change = as.numeric(peak.change), 
+                                   smooth.decrease.onset = as.numeric(decrease.onset), smooth.decrease.offset = as.numeric(decrease.offset), smooth.increase.onset = as.numeric(increase.onset), 
                                    smooth.increase.offset = as.numeric(increase.offset), smooth.last.change = as.numeric(change.offset))
- 
   
   ## MODEL FITTED VALUES ##
   
