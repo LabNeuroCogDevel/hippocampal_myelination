@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# A script to project volumetric R1 data from the hippocampus to hippunfold surfaces
+# A script to project volumetric R1 data from the hippocampus to hippunfold surfaces using ribbon constrained mapping
 
 project_dir=/Volumes/Hera/Projects/hippocampal_myelin
 hippunfold_dir=/Volumes/Hera/Projects/hippunfold/output_1mm/hippunfold
@@ -29,7 +29,7 @@ for R1map in ${R1map_dir}/sub*/ses*/*R1map.nii.gz; do
 	mkdir -p ${hippunfold_dir}/${subject_id}/${session_id}/R1
 	for hemi in L R; do
 		for hpc in hipp dentate; do
-			wb_command -volume-to-surface-mapping ${R1map_dir}/${subject_id}/${session_id}/${subses}_R1map.nii.gz ${hippunfold_dir}/${subject_id}/${session_id}/surf/${subses}_hemi-${hemi}_space-T1w_den-1mm_label-${hpc}_midthickness.surf.gii ${hippunfold_dir}/${subject_id}/${session_id}/R1/${subses}_hemi-${hemi}_space-T1w_den-1mm_label-${hpc}_R1.shape.gii -trilinear
+			wb_command -volume-to-surface-mapping ${R1map_dir}/${subject_id}/${session_id}/${subses}_R1map.nii.gz ${hippunfold_dir}/${subject_id}/${session_id}/surf/${subses}_hemi-${hemi}_space-T1w_den-1mm_label-${hpc}_midthickness.surf.gii ${hippunfold_dir}/${subject_id}/${session_id}/R1/${subses}_hemi-${hemi}_space-T1w_den-1mm_label-${hpc}_R1.shape.gii -ribbon-constrained ${hippunfold_dir}/${subject_id}/${session_id}/surf/${subses}_hemi-${hemi}_space-T1w_den-1mm_label-${hpc}_inner.surf.gii ${hippunfold_dir}/${subject_id}/${session_id}/surf/${subses}_hemi-${hemi}_space-T1w_den-1mm_label-${hpc}_outer.surf.gii -gaussian 0.5 -dilate-missing 1 -bad-vertices-out ${hippunfold_dir}/${subject_id}/${session_id}/R1/${subses}_hemi-${hemi}_space-T1w_den-1mm_label-${hpc}_R1_badvertices.shape.gii
 			wb_command -metric-smoothing ${hippunfold_dir}/${subject_id}/${session_id}/surf/${subses}_hemi-${hemi}_space-T1w_den-1mm_label-${hpc}_midthickness.surf.gii ${hippunfold_dir}/${subject_id}/${session_id}/R1/${subses}_hemi-${hemi}_space-T1w_den-1mm_label-${hpc}_R1.shape.gii 1 ${hippunfold_dir}/${subject_id}/${session_id}/R1/${subses}_hemi-${hemi}_space-T1w_den-1mm_label-${hpc}_R1.shape.gii
 		done
 	done
