@@ -17,7 +17,6 @@ library(lubridate)
 library(ggplot2)
 library(tidyverse)
 library(fuzzyjoin)
-#library(arrow)
 library(readODS)
 library(tidyr)
 ```
@@ -81,6 +80,16 @@ outliers <- hippocampal.R1 %>%
 participants.qc <- participants.qc %>% filter(subses != "sub-11640_ses-20180514") #remove 1 session that failed quantitative QC from the 245, remaining N = 244 from 151 participants
 ```
 
+Exclude sessions with bad hippunfold outputs (low dice)
+
+```{r}
+hippocampal.dice <- read.csv("/Volumes/Hera/Projects/hippocampal_myelin/output_measures/7T_MP2RAGE/hippunfold_R1/quality_control/hippocampus_dice.csv")
+hippocampal.dice <- merge(hippocampal.dice, participants.qc)
+hippocampal.dice <- hippocampal.dice %>% group_by(subject_id, session_id) %>% do(average.dice = mean(.$dice)) %>% unnest(cols = "average.dice") #calculate average dice score across left and right hemisphere. mean dice = 0.8088 +- 0.042
+
+participants.qc <- participants.qc %>% filter(subses != "sub-11801_ses-20220602") #remove 1 sessions with bad hippunfold outputs from the 244, remaining N = 243 from 151 participants
+```
+
 #### Repeated Sessions Exclusion
 
 Exclude repeat-MR sessions that occurred within < 6 months of each other
@@ -107,12 +116,12 @@ repeatscans <- repeatscans[repeatscan.indices,] %>% arrange(subject_id, session_
 participants.final <- participants.qc %>% filter(!(subject_id == "sub-11668" & session_id == "ses-20180723"))
 participants.final <- participants.final %>% filter(!(subject_id == "sub-11716" & session_id == "ses-20221118"))
 participants.final <- participants.final %>% filter(!(subject_id == "sub-11793" & session_id == "ses-20230120"))
-participants.final <- participants.final %>% filter(!(subject_id == "sub-11822" & session_id == "ses-20210412")) #remove 4 sessions that are repeat MRI from the 244, resulting in N = 240 sessions from 151 participants
+participants.final <- participants.final %>% filter(!(subject_id == "sub-11822" & session_id == "ses-20210412")) #remove 4 sessions that are repeat MRI from the 244, resulting in N = 239 sessions from 151 participants
 ```
 
 Exclude subject with incorrect (repeat assign) lunaid
 ```{r}
-participants.final <- participants.final %>% filter(!(subject_id == "sub-11748" & session_id == "ses-20190401")) #remove 1 sub/session from the 240, resulting in N = 239 sessions from 50 subjects
+participants.final <- participants.final %>% filter(!(subject_id == "sub-11748" & session_id == "ses-20190401")) #remove 1 sub/session from the 239, resulting in N = 238 sessions from 150 participants
 ```
 
 #### Save Final Sample
@@ -142,7 +151,7 @@ length(participants.final$session_id)
 
 ```{r}
 participants.final <- participants.final %>% group_by(subject_id) %>% mutate(mp2rage.session_number = dense_rank(session_id))
-table(participants.final$mp2rage.session_number) #83 participants with 1 scan, 45 participants with 2 scans, 22 participants with 3 scans
+table(participants.final$mp2rage.session_number) #84 participants with 1 scan, 44 participants with 2 scans, 22 participants with 3 scans
 ```
 
 ```{r}
@@ -159,7 +168,3 @@ participants.final.demos <- participants.final.demos %>% rename(lunaid = lunaid.
 participants.final.demos <- participants.final.demos %>% select(subject_id, session_id, subses, lunaid, visitno, mp2rage.session_number, top.mri.date, behave.date, age, sex, everything()) #order cols
 write.csv(participants.final.demos, "/Volumes/Hera/Projects/hippocampal_myelin/sample_info/7T_MP2RAGE/finalsample_demographics.csv", quote = F, row.names = F)
 ```
-
-
-
-
