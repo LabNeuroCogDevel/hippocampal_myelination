@@ -98,7 +98,8 @@ whoqol.scored <- whoqol.numeric %>% mutate(whoqol_overall_qol = whoqol1,
                                            whoqol_psychological = scorewhoqol(items = c("whoqol5", "whoqol6", "whoqol7", "whoqol11", "whoqol19", "whoqol26")),
                                            whoqol_social = scorewhoqol(items = c("whoqol20", "whoqol21", "whoqol22")),
                                            whoqol_environment = scorewhoqol(items = c("whoqol8", "whoqol9", "whoqol12", "whoqol13", "whoqol14","whoqol23", "whoqol24", "whoqol25")))
-whoqol.scored <- whoqol.scored %>% select(lunaid, behave.date, whoqol_overall_qol, whoqol_overall_health, whoqol_physical, whoqol_psychological, whoqol_social, whoqol_environment)
+whoqol.scored <- whoqol.scored %>% select(lunaid, behave.date, whoqol_overall_qol, whoqol_overall_health, whoqol_physical, whoqol_psychological, whoqol_social, whoqol_environment, whoqol8, whoqol9, whoqol12, whoqol13, whoqol14, whoqol23, whoqol24, whoqol25)
+names(whoqol.scored) <- c("lunaid", "behave.date", "whoqol_overall_qol", "whoqol_overall_health", "whoqol_physical", "whoqol_psychological", "whoqol_social", "whoqol_environment", "whoqol_env_safety", "whoqol_env_physicalenv", "whoqol_env_financial", "whoqol_env_information", "whoqol_env_leisure", "whoqol_env_livingplace", "whoqol_env_healthservices", "whoqol_env_transport")
 whoqol.scored <- whoqol.scored %>% distinct(lunaid, behave.date, .keep_all = TRUE) # remove a few repeat survey entries
 
 write.csv(whoqol.scored, "/Volumes/Hera/Projects/hippocampal_myelin/sample_info/7T_MP2RAGE/whoqol-bref.csv", quote = F, row.names = F)
