@@ -5,6 +5,7 @@ library(tidyr)
 library(lubridate)
 library(stringr)
 library(purrr)
+library(LNCDR)
 
 ###########################################################################################################
 #### Read in survey data ####
@@ -24,8 +25,7 @@ readwhoqol <- function(d) {
   #Extract participant and visit information
   lunaid <- as.integer(sub(".*/(\\d+)_.*", "\\1", d[1,1]))
   survey.date <- as.Date(sub(".*_(\\d{8}).*", "\\1", d[1,1]), "%Y%m%d")
-  entry.date <- d %>% select(contains("Today's date")) %>% pull() %>% as.Date(format = "%m/%d/%Y")
-  id.info <- data.frame("lunaid" = lunaid, "survey.date" = survey.date, "entry.date" = entry.date)
+  id.info <- data.frame("lunaid" = lunaid, "survey.date" = survey.date)
   
   #Identify whoqol questions
   i <- names(d) |> grep(pattern = "How would you rate your quality of life?") #identify position of first question in the whoqol battery
@@ -96,8 +96,14 @@ whoqol.scored <- whoqol.numeric %>% mutate(whoqol_overall_qol = whoqol1,
                                            whoqol_psychological = scorewhoqol(items = c("whoqol5", "whoqol6", "whoqol7", "whoqol11", "whoqol19", "whoqol26")),
                                            whoqol_social = scorewhoqol(items = c("whoqol20", "whoqol21", "whoqol22")),
                                            whoqol_environment = scorewhoqol(items = c("whoqol8", "whoqol9", "whoqol12", "whoqol13", "whoqol14","whoqol23", "whoqol24", "whoqol25")))
-whoqol.scored <- whoqol.scored %>% select(lunaid, survey.date, entry.date, whoqol_overall_qol, whoqol_overall_health, whoqol_physical, whoqol_psychological, whoqol_social, whoqol_environment, whoqol8, whoqol9, whoqol12, whoqol13, whoqol14, whoqol23, whoqol24, whoqol25)
-names(whoqol.scored) <- c("lunaid", "survey.date", "entry.date", "whoqol_overall_qol", "whoqol_overall_health", "whoqol_physical", "whoqol_psychological", "whoqol_social", "whoqol_environment", "whoqol_env_safety", "whoqol_env_physicalenv", "whoqol_env_financial", "whoqol_env_information", "whoqol_env_leisure", "whoqol_env_livingplace", "whoqol_env_healthservices", "whoqol_env_transport")
-whoqol.scored <- whoqol.scored %>% distinct(lunaid, survey.date, entry.date, .keep_all = TRUE) # remove a few repeat survey entries
+whoqol.scored <- whoqol.scored %>% select(lunaid, survey.date, whoqol_overall_qol, whoqol_overall_health, whoqol_physical, whoqol_psychological, whoqol_social, whoqol_environment, whoqol8, whoqol9, whoqol12, whoqol13, whoqol14, whoqol23, whoqol24, whoqol25)
+names(whoqol.scored) <- c("lunaid", "survey.date", "whoqol_overall_qol", "whoqol_overall_health", "whoqol_physical", "whoqol_psychological", "whoqol_social", "whoqol_environment", "whoqol_env_safety", "whoqol_env_physicalenv", "whoqol_env_financial", "whoqol_env_information", "whoqol_env_leisure", "whoqol_env_livingplace", "whoqol_env_healthservices", "whoqol_env_transport")
+whoqol.scored <- whoqol.scored %>% distinct(lunaid, survey.date, .keep_all = TRUE) # remove a few repeat survey entries
 
+###########################################################################################################
+#### Match dates to MRI/behavioral visits and save output ####
+hpc.R1 <- read.csv("/Volumes/Hera/Projects/hippocampal_myelin/output_measures/7T_MP2RAGE/hippocampal_R1_demographics.csv") %>% select(subject_id, session_id, lunaid, visitno, behave.date)
+hpc.R1$behave.date <- as.Date(as.character(hpc.R1$behave.date),  format = "%Y%m%d")
+whoqol.scored <- date_match(d1 = hpc.R1, d2 = whoqol.scored, idcol = "lunaid", datecol1 = "behave.date", datecol2 = "survey.date", all.x = T, maxdatediff = 180)
+whoqol.scored <- whoqol.scored %>% select(subject_id, session_id, lunaid, visitno, behave.date, survey.date, datediff.y, everything())
 write.csv(whoqol.scored, "/Volumes/Hera/Projects/hippocampal_myelin/sample_info/7T_MP2RAGE/whoqol-bref.csv", quote = F, row.names = F)
