@@ -70,7 +70,7 @@ whoqol.numeric$whoqol4 <- 6-whoqol.numeric$whoqol4
 whoqol.numeric$whoqol26 <- 6-whoqol.numeric$whoqol26
 
 # Compute domain scores
-scorewhoqol <- function(items) {
+scorewhoqol <- function(items, math) {
   domain.data <- whoqol.numeric[items]
   
   #Impute NAs with average of other items in domain
@@ -78,26 +78,30 @@ scorewhoqol <- function(items) {
     mutate(across(1:ncol(domain.data), ~ ifelse(is.na(.), round(mean(c_across(1:ncol(domain.data)), na.rm = TRUE)), .))) %>%
     ungroup()
   
-  #Obtain domain mean
-  domain.score <- rowMeans(domain.data)
-  
-  #Multiply domain score by 4
-  domain.score <- domain.score*4
-  
-  #Transform to 0-100 scale
-  domain.score <- (domain.score - 4)*(100/16)
-  
+  #Obtain domain score
+  if(math == "mean"){
+  	domain.score <- rowMeans(domain.data) #compute average
+  	domain.score <- domain.score*4 #multiple domain score by 4
+	domain.score <- (domain.score - 4)*(100/16) #trainsform to 0-100 scale
+  }
+  if(math == "sum"){
+	domain.score <- rowSums(domain.data) #compute sum
+  }
+
   return(domain.score)
 }
 
 whoqol.scored <- whoqol.numeric %>% mutate(whoqol_overall_qol = whoqol1,
                                            whoqol_overall_health = whoqol2,
-                                           whoqol_physical = scorewhoqol(items = c("whoqol3", "whoqol4", "whoqol10", "whoqol15", "whoqol16", "whoqol17", "whoqol18")),
-                                           whoqol_psychological = scorewhoqol(items = c("whoqol5", "whoqol6", "whoqol7", "whoqol11", "whoqol19", "whoqol26")),
-                                           whoqol_social = scorewhoqol(items = c("whoqol20", "whoqol21", "whoqol22")),
-                                           whoqol_environment = scorewhoqol(items = c("whoqol8", "whoqol9", "whoqol12", "whoqol13", "whoqol14","whoqol23", "whoqol24", "whoqol25")))
-whoqol.scored <- whoqol.scored %>% select(lunaid, survey.date, whoqol_overall_qol, whoqol_overall_health, whoqol_physical, whoqol_psychological, whoqol_social, whoqol_environment, whoqol8, whoqol9, whoqol12, whoqol13, whoqol14, whoqol23, whoqol24, whoqol25)
-names(whoqol.scored) <- c("lunaid", "survey.date", "whoqol_overall_qol", "whoqol_overall_health", "whoqol_physical", "whoqol_psychological", "whoqol_social", "whoqol_environment", "whoqol_env_safety", "whoqol_env_physicalenv", "whoqol_env_financial", "whoqol_env_information", "whoqol_env_leisure", "whoqol_env_livingplace", "whoqol_env_healthservices", "whoqol_env_transport")
+                                           whoqol_physical = scorewhoqol(items = c("whoqol3", "whoqol4", "whoqol10", "whoqol15", "whoqol16", "whoqol17", "whoqol18"), math = "mean"),
+                                           whoqol_psychological = scorewhoqol(items = c("whoqol5", "whoqol6", "whoqol7", "whoqol11", "whoqol19", "whoqol26"), math = "mean"),
+                                           whoqol_social = scorewhoqol(items = c("whoqol20", "whoqol21", "whoqol22"), math = "mean"),
+                                           whoqol_environment = scorewhoqol(items = c("whoqol8", "whoqol9", "whoqol12", "whoqol13", "whoqol14","whoqol23", "whoqol24", "whoqol25"), math = "mean"),
+					   whoqol_environment_resources = scorewhoqol(items = c("whoqol12", "whoqol24"), math = "sum"),
+					   whoqol_environment_surroundings = scorewhoqol(items = c("whoqol8", "whoqol9", "whoqol23","whoqol25"), math = "sum"),
+					   whoqol_environment_enrichment = scorewhoqol(items = c("whoqol13", "whoqol14"), math = "sum"))
+whoqol.scored <- whoqol.scored %>% select(lunaid, survey.date, whoqol_overall_qol, whoqol_overall_health, whoqol_physical, whoqol_psychological, whoqol_social, whoqol_environment, whoqol_environment_resources, whoqol_environment_surroundings, whoqol_environment_enrichment,  whoqol8, whoqol9, whoqol12, whoqol13, whoqol14, whoqol23, whoqol24, whoqol25)
+names(whoqol.scored) <- c("lunaid", "survey.date", "whoqol_overall_qol", "whoqol_overall_health", "whoqol_physical", "whoqol_psychological", "whoqol_social", "whoqol_environment", "whoqol_environment_resources", "whoqol_environment_surroundings", "whoqol_environment_enrichment", "whoqol_env_safety", "whoqol_env_physicalenv", "whoqol_env_financial", "whoqol_env_information", "whoqol_env_leisure", "whoqol_env_livingplace", "whoqol_env_healthservices", "whoqol_env_transport")
 whoqol.scored <- whoqol.scored %>% distinct(lunaid, survey.date, .keep_all = TRUE) # remove a few repeat survey entries
 
 ###########################################################################################################
