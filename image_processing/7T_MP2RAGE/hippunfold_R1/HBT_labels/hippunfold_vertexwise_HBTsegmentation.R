@@ -30,13 +30,13 @@ lh_hippsurface_HBT <- bind_rows(lapply(lh_hippsurface_files, function(f) {extrac
 lh_hippsurface_HBT <- left_join(participants, lh_hippsurface_HBT)
 lh_hippsurface_HBT <- lh_hippsurface_HBT %>% select(-subject_id, -session_id)
 lh_hippsurface_HBT.mask <- lh_hippsurface_HBT %>% summarise(across(everything(), ~ as.numeric(names(which.max(table(.)))))) %>% t() %>% as.data.frame()
-write_metric_gifti(x = lh_hippsurface_HBT.mask$V1, hemisphere = "left", gifti_fname="/Volumes/Hera/Projects/hippocampal_myelin/output_measures/7T_MP2RAGE/hippunfold_R1/HBT_segmentation/hippunfold_hemi_L_label-hipp_atlas-HBT.shape.gii")
+write_metric_gifti(x = lh_hippsurface_HBT.mask$V1, hemisphere = "left", gifti_fname="/Volumes/Hera/Projects/hippocampal_myelin/output_measures/7T_MP2RAGE/hippunfold_R1/HBT_segmentation/hippunfold_hemi-L_label-hipp_atlas-HBT.shape.gii")
 
 rh_hippsurface_HBT <- bind_rows(lapply(rh_hippsurface_files, function(f) {extract_HBT(f)}))
 rh_hippsurface_HBT <- left_join(participants, rh_hippsurface_HBT)
 rh_hippsurface_HBT <- rh_hippsurface_HBT %>% select(-subject_id, -session_id)
 rh_hippsurface_HBT.mask <- rh_hippsurface_HBT %>% summarise(across(everything(), ~ as.numeric(names(which.max(table(.)))))) %>% t() %>% as.data.frame()
-write_metric_gifti(x = rh_hippsurface_HBT.mask$V1, hemisphere = "right", gifti_fname="/Volumes/Hera/Projects/hippocampal_myelin/output_measures/7T_MP2RAGE/hippunfold_R1/HBT_segmentation/hippunfold_hemi_R_label-hipp_atlas-HBT.shape.gii")
+write_metric_gifti(x = rh_hippsurface_HBT.mask$V1, hemisphere = "right", gifti_fname="/Volumes/Hera/Projects/hippocampal_myelin/output_measures/7T_MP2RAGE/hippunfold_R1/HBT_segmentation/hippunfold_hemi-R_label-hipp_atlas-HBT.shape.gii")
 
 ########### Dentate gyrus surface (label-dentate) ################
 
@@ -47,11 +47,11 @@ lh_dentatesurface_HBT <- bind_rows(lapply(lh_dentatesurface_files, function(f) {
 lh_dentatesurface_HBT <- left_join(participants, lh_dentatesurface_HBT)
 lh_dentatesurface_HBT <- lh_dentatesurface_HBT %>% select(-subject_id, -session_id)
 lh_dentatesurface_HBT.mask <- lh_dentatesurface_HBT %>% summarise(across(everything(), ~ as.numeric(names(which.max(table(.)))))) %>% t() %>% as.data.frame()
-write_metric_gifti(x = lh_dentatesurface_HBT.mask$V1, hemisphere = "left", gifti_fname="/Volumes/Hera/Projects/hippocampal_myelin/output_measures/7T_MP2RAGE/hippunfold_R1/HBT_segmentation/hippunfold_hemi_L_label-dentate_atlas-HBT.shape.gii")
+write_metric_gifti(x = lh_dentatesurface_HBT.mask$V1, hemisphere = "left", gifti_fname="/Volumes/Hera/Projects/hippocampal_myelin/output_measures/7T_MP2RAGE/hippunfold_R1/HBT_segmentation/hippunfold_hemi-L_label-dentate_atlas-HBT.shape.gii")
 
 rh_dentatesurface_HBT <- bind_rows(lapply(rh_dentatesurface_files, function(f) {extract_HBT(f)}))
 rh_dentatesurface_HBT <- left_join(participants, rh_dentatesurface_HBT)
 rh_dentatesurface_HBT <- rh_dentatesurface_HBT %>% select(-subject_id, -session_id)
 rh_dentatesurface_HBT.mask <- rh_dentatesurface_HBT %>% summarise(across(everything(), ~ as.numeric(names(which.max(table(.)))))) %>% t() %>% as.data.frame()
-write_metric_gifti(x = rh_dentatesurface_HBT.mask$V1, hemisphere = "right", gifti_fname="/Volumes/Hera/Projects/hippocampal_myelin/output_measures/7T_MP2RAGE/hippunfold_R1/HBT_segmentation/hippunfold_hemi_R_label-dentate_atlas-HBT.shape.gii")
+write_metric_gifti(x = rh_dentatesurface_HBT.mask$V1, hemisphere = "right", gifti_fname="/Volumes/Hera/Projects/hippocampal_myelin/output_measures/7T_MP2RAGE/hippunfold_R1/HBT_segmentation/hippunfold_hemi-R_label-dentate_atlas-HBT.shape.gii")
 
