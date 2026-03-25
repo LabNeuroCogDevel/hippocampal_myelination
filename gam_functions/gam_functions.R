@@ -90,7 +90,7 @@ gam.statistics.smooths <- function(input.df, region, smooth_var, id_var, covaria
       switch (thisClass,
               "numeric" = {thisPred[,thisVar] = median(df[,thisVar])}, #make predictions based on median value
               "character" = {thisPred[,thisVar] = levels(df[,thisVar])[[1]]}, #make predictions based on first level of char
-              "factor" = {thisPred[,thisVar] = levels(df[,thisVar])[[1]]}, #make predictions based on first level of factor 
+              "factor" = {thisPred[,thisVar] = levels(df[,thisVar])[[2]]}, #make predictions based on first level of factor 
               "ordered" = {thisPred[,thisVar] = levels(df[,thisVar])[[1]]} #make predictions based on first level of ordinal variable
       )
     }
