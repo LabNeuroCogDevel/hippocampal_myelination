@@ -92,6 +92,8 @@ environment.ADI$FIPS <- as.character(environment.ADI$FIPS)
 # Get ADI scores for lncd participants
 lncd.GEOID.ADI <- left_join(addresses.GEOIDs.blockgroup, environment.ADI, by = "FIPS")
 lncd.GEOID.ADI <- sf::st_drop_geometry(lncd.GEOID.ADI) #remove geometry information 
+lncd.GEOID.ADI <- lncd.GEOID.ADI %>% select(lunaid, visitno, FIPS, ADI_NATRANK)
+colnames(lncd.GEOID.ADI) <- c("lunaid", "visitno", "FIPS", "ADI_natrank_youth")
 
 ########### Link Tract GEOIDs (geoid20) to Child Opportunity Index 3.0 Data ################
 
@@ -104,15 +106,15 @@ environment.COI$geoid20 <- as.character(environment.COI$geoid20)
 # Get COI scores for lncd participants
 lncd.GEOID.COI <- left_join(addresses.GEOIDs.tracts, environment.COI, by = "geoid20")
 lncd.GEOID.COI <- sf::st_drop_geometry(lncd.GEOID.COI) #remove geometry information 
+lncd.GEOID.COI <- lncd.GEOID.COI %>% select(lunaid, visitno, geoid20, contains("COI"), contains("HE_"), contains("SE_"), contains("ED_"))
 
 ########### Finalize and Save ################
 
-lncd.GEOID.environment <- left_join(lncd.GEOID.ADI, lncd.GEOID.COI, by = c("lunaid", "visitno", "tigerLine.tigerLineId"))
+lncd.GEOID.environment <- left_join(lncd.GEOID.ADI, lncd.GEOID.COI, by = c("lunaid", "visitno"))
 
 merge7t <- read.csv("./sample_info/7T_MP2RAGE/merge_7t_04172025.csv") %>% select(lunaid, visitno, behave.date, top.mri.date)
 
 lncd.GEOID.environment <- left_join(merge7t, lncd.GEOID.environment, by = c("lunaid", "visitno"))
-lncd.GEOID.environment <- lncd.GEOID.environment %>% group_by(lunaid) %>% fill(8:9, .direction = "downup") %>% ungroup()
-lncd.GEOID.environment <- lncd.GEOID.environment %>% group_by(lunaid) %>% fill(21:56, .direction = "downup") %>% ungroup()
+lncd.GEOID.environment <- lncd.GEOID.environment %>% group_by(lunaid) %>% fill(6:43, .direction = "downup") %>% ungroup()
 
 write.csv(lncd.GEOID.environment, "./sample_info/7T_MP2RAGE/geocoded_ADI_COI.csv", quote = F, row.names = F)
